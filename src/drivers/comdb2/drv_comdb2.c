@@ -119,7 +119,7 @@ static int comdb2_drv_bind_result(struct db_stmt *stmt, db_bind_t *params, size_
 /* execute prepared statement */
 static db_error_t comdb2_drv_execute(struct db_stmt *stmt, struct db_result *rs)
 {
-  DEBUG("%s(stmt=%p, rs=%p)", __func__, stmt, rs);
+  // DEBUG("%s(stmt=%p, rs=%p)", __func__, stmt, rs);
   return 0;
 }
 
@@ -145,17 +145,19 @@ static db_error_t comdb2_drv_query(struct db_conn *sb_conn, const char *query, s
 
   int rc = cdb2_run_statement(db, query);
 
-
   sb_conn->sql_errno = 0;
   sb_conn->sql_state = NULL;
   sb_conn->sql_errmsg = NULL;
 
-  DEBUG("%s(sb_conn=%p, query=%.*s, len=%d, rs=%p) rc %d", __func__, sb_conn, (int) len, query, (int) len, rs, rc);
   if (rc) {
       sb_conn->error = 0;
       sb_conn->sql_errno = rc;
-      sb_conn->sql_errno = cdb2_errstr(db);
-      return DB_ERROR_FATAL;
+      sb_conn->sql_errmsg = cdb2_errstr(db);
+      DEBUG("%s(sb_conn=%p, query=%.*s, len=%d, rs=%p) rc=%d err=%s", __func__, sb_conn, (int) len, query, (int) len, rs, rc, cdb2_errstr(db));
+      if (rc == CDB2ERR_DUPLICATE)
+          return 0;  // pretend this didn't happen
+      else 
+          return DB_ERROR_FATAL;
   }
   return 0;
 }

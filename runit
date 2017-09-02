@@ -2,10 +2,18 @@
 
 set -e
 
-echo "cleaup"
-src/sysbench src/lua/oltp_insert.lua --db-debug=on --verbosity=3 --db-driver=comdb2 --time=2 cleanup
+if [[ $# -ne 1 ]]; then
+    echo "Usage: nthreads" >&2
+    exit 2
+fi
+
+nthreads=$1
+shift
+
+echo "cleanup"
+src/sysbench src/lua/oltp_insert.lua --db-debug=on --verbosity=3 --db-driver=comdb2 --threads=${nthreads} cleanup
 echo "prepare"
-src/sysbench src/lua/oltp_insert.lua --db-debug=on --auto_inc=off --verbosity=3 --db-driver=comdb2 prepare
+src/sysbench src/lua/oltp_insert.lua --db-debug=on --auto_inc=off --verbosity=3 --db-driver=comdb2 --threads=${nthreads} prepare
 echo "run"
-src/sysbench src/lua/oltp_insert.lua --db-debug=on --auto_inc=off --verbosity=3 --db-driver=comdb2 --histogram=on --time=30 run
+src/sysbench src/lua/oltp_insert.lua --db-debug=on --auto_inc=off --verbosity=5 --db-driver=comdb2 --threads=${nthreads} --histogram=on --time=30 run
 
