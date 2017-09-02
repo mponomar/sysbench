@@ -241,6 +241,8 @@ AS_IF([test "x$with_comdb2" != xno], [
     AC_DEFINE([USE_COMDB2], 1,
               [Define to 1 if you want to compile with Comdb2 support])
     USE_COMDB2=1
+    COMDB2_LIBS="$(pkg-config --libs cdb2api)"
+    COMDB2_CFLAGS="$(pkg-config --cflags cdb2api)"
     AC_SUBST([COMDB2_LIBS])
     AC_SUBST([COMDB2_CFLAGS])
 ])
@@ -295,6 +297,16 @@ AS_IF([test x$with_pgsql != xno], [
 ])
 AM_CONDITIONAL(USE_PGSQL, test x$with_pgsql != xno)
 AC_SUBST([USE_PGSQL])
+
+AS_IF([test x$with_oracle != xno], [
+    AC_DEFINE(USE_ORACLE,1,[Define to 1 if you want to compile with Oracle support])
+    ORA_LIBS="-L${sb_with_oracle}/lib -lclntsh"
+    ORA_CFLAGS="-I${with_oracle}/include -I${with_oracle}/rdbms/demo -I${with_oracle}/rdbms/public"
+    AC_SUBST([ORA_LIBS])
+    AC_SUBST([ORA_CFLAGS])
+])
+AM_CONDITIONAL(USE_ORACLE, test x$with_oracle != xno)
+
 
 # Check for libaio
 AC_CHECK_AIO

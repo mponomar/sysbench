@@ -45,7 +45,7 @@ pgsql_ldadd = drivers/pgsql/libsbpgsql.a $(PGSQL_LIBS)
 endif
 
 if USE_COMDB2
-comdb2_ldadd = drivers/comdb2/libsbcomdb2.a $(MYSQL_LIBS)
+comdb2_ldadd = drivers/comdb2/libsbcomdb2.a $(COMDB2_LIBS)
 endif
 
 sysbench_SOURCES = sysbench.c sysbench.h sb_timer.c sb_timer.h \
