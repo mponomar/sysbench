@@ -86,3 +86,5 @@ prime
 stage
 *.snap
 /snap/snapcraft.yaml
+/src/drivers/comdb2/.deps/ 
+tags

@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -e
+
+echo "cleaup"
+src/sysbench src/lua/oltp_insert.lua --db-debug=on --verbosity=3 --db-driver=comdb2 --time=2 cleanup
+echo "prepare"
+src/sysbench src/lua/oltp_insert.lua --db-debug=on --auto_inc=off --verbosity=3 --db-driver=comdb2 prepare
+echo "run"
+src/sysbench src/lua/oltp_insert.lua --db-debug=on --auto_inc=off --verbosity=3 --db-driver=comdb2 --histogram=on --time=30 run
+

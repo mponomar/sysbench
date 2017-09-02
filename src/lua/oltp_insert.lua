@@ -44,8 +44,10 @@ function event()
          i = sysbench.rand.unique() - 2147483648
       end
 
-      con:query(string.format("INSERT INTO %s (id, k, c, pad) VALUES " ..
+      local q = string.format("INSERT INTO %s (id, k, c, pad) VALUES " ..
                                  "(%d, %d, '%s', '%s')",
-                              table_name, i, k_val, c_val, pad_val))
+                              table_name, i, k_val, c_val, pad_val)
+      -- print(q)
+      con:query(q)
    end
 end

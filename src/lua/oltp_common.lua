@@ -155,6 +155,7 @@ function create_table(drv, con, table_num)
    local extra_table_options = ""
    local query
 
+
    if sysbench.opt.secondary then
      id_index_def = "KEY xid"
    else
@@ -180,12 +181,19 @@ function create_table(drv, con, table_num)
       else
         id_def = "SERIAL"
       end
+   elseif drv:name() == "comdb2" 
+   then
+      id_def = "INTEGER"
    else
       error("Unsupported database driver:" .. drv:name())
    end
 
    print(string.format("Creating table 'sbtest%d'...", table_num))
 
+   if drv:name() == "comdb2" then
+   query = string.format([[
+CREATE TABLE sbtest%d( id %s, k INTEGER DEFAULT 0 NOT NULL, c CSTRING(120) DEFAULT "" NOT NULL, pad CSTRING(60) DEFAULT "" NOT NULL, %s (id)) %s %s]], table_num, id_def, id_index_def, engine_def, extra_table_options)
+   else
    query = string.format([[
 CREATE TABLE sbtest%d(
   id %s,
@@ -195,6 +203,7 @@ CREATE TABLE sbtest%d(
   %s (id)
 ) %s %s]],
       table_num, id_def, id_index_def, engine_def, extra_table_options)
+   end
 
    con:query(query)
 
