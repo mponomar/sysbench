@@ -97,6 +97,16 @@ if(USE_MYSQL)
   target_link_libraries (sysbench ${LIBMYSQL_LIB})
 endif(USE_MYSQL)
 
+if(USE_COMDB2)
+  message("using comdb2 driver")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_COMDB2")
+  include_directories(${COMDB2_PATH})
+  add_subdirectory(drivers/comdb2)
+  target_link_libraries (sysbench sbmysql)
+  target_link_libraries (sysbench ${COMDB2_LIB})
+endif(USE_MYSQL)
+
+
 add_subdirectory(tests/cpu)
 target_link_libraries (sysbench sbcpu)
 

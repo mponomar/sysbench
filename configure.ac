@@ -125,6 +125,17 @@ AS_IF([test "x$with_mysql" != "xno"],
    [mysql_support=no])
 AC_MSG_RESULT([$mysql_support])
 
+# Check if we should compile with Comdb2 support
+AC_ARG_WITH([comdb2],
+            AS_HELP_STRING([--with-comdb2],
+                           [compile with Comdb2 support (default is enabled)]),
+            [], [with_comdb2=no])
+AC_MSG_CHECKING([whether to compile with Comdb2 support])
+AS_IF([test "x$with_comdb2" != "xno"],
+   [comdb2_support=yes],
+   [comdb2_support=no])
+AC_MSG_RESULT([$comdb2_support])
+
 # Check if we should compile with Drizzle support
 AC_ARG_WITH([drizzle],
             AS_HELP_STRING([--with-drizzle],
@@ -225,6 +236,18 @@ AS_IF([test "x$with_mysql" != xno], [
 ])
 AM_CONDITIONAL([USE_MYSQL], test x$with_mysql != xno)
 AC_SUBST([USE_MYSQL])
+
+AS_IF([test "x$with_comdb2" != xno], [
+    AC_DEFINE([USE_COMDB2], 1,
+              [Define to 1 if you want to compile with Comdb2 support])
+    USE_COMDB2=1
+    AC_SUBST([COMDB2_LIBS])
+    AC_SUBST([COMDB2_CFLAGS])
+])
+AM_CONDITIONAL([USE_COMDB2], test x$with_comdb2 = xyes)
+AC_SUBST([USE_COMDB2])
+
+
 
 AS_IF([test "x$with_drizzle" != xno], [
   AC_LIB_HAVE_LINKFLAGS(drizzle,,
@@ -549,6 +572,7 @@ src/drivers/drizzle/Makefile
 src/drivers/oracle/Makefile
 src/drivers/pgsql/Makefile
 src/drivers/attachsql/Makefile
+src/drivers/comdb2/Makefile
 src/tests/Makefile
 src/tests/cpu/Makefile
 src/tests/fileio/Makefile
@@ -583,6 +607,7 @@ AC_MSG_RESULT([Drizzle support    : ${drizzle_support}])
 AC_MSG_RESULT([AttachSQL support  : ${attachsql_support}])
 AC_MSG_RESULT([Oracle support     : ${oracle_support}])
 AC_MSG_RESULT([PostgreSQL support : ${pgsql_support}])
+AC_MSG_RESULT([Comdb2 support     : ${comdb2_support}])
 AC_MSG_RESULT([])
 AC_MSG_RESULT([LuaJIT             : ${sb_use_luajit}])
 AC_MSG_RESULT([LUAJIT_CFLAGS      : ${LUAJIT_CFLAGS}])

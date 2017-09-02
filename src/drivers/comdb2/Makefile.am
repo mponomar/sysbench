@@ -1,5 +1,5 @@
-# Copyright (C) 2004 MySQL AB
-# Copyright (C) 2004-2014 Alexey Kopytov <akopytov@gmail.com>
+# Copyright (C) 2005 MySQL AB
+# Copyright (C) 2005-2015 Alexey Kopytov <akopytov@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,29 +15,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if USE_MYSQL
-MYSQL_DIR = mysql
-endif
+noinst_LIBRARIES = libsbcomdb2.a
 
-if USE_DRIZZLE
-DRIZZLE_DIR = drizzle
-endif
-
-if USE_ATTACHSQL
-ATTACHSQL_DIR = attachsql
-endif
-
-if USE_ORACLE
-ORACLE_DIR = oracle
-endif
-
-if USE_PGSQL
-PGSQL_DIR = pgsql
-endif
-
-if USE_COMDB2
-COMDB2_DIR = comdb2
-endif
-
-
-SUBDIRS = $(MYSQL_DIR) $(ORACLE_DIR) $(PGSQL_DIR) $(DRIZZLE_DIR) $(ATTACHSQL_DIR) $(COMDB2_DIR)
+libsbcomdb2_a_SOURCES = drv_comdb2.c
+libsbcomdb2_a_CPPFLAGS = -g $(COMDB2_CFLAGS) $(AM_CPPFLAGS)
