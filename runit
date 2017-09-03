@@ -10,10 +10,16 @@ fi
 nthreads=$1
 shift
 
-echo "cleanup"
-src/sysbench src/lua/oltp_insert.lua --db-debug=on --verbosity=3 --db-driver=comdb2 --threads=${nthreads} cleanup
-echo "prepare"
-src/sysbench src/lua/oltp_insert.lua --db-debug=on --auto_inc=off --verbosity=3 --db-driver=comdb2 --threads=${nthreads} prepare
-echo "run"
-src/sysbench src/lua/oltp_insert.lua --db-debug=on --auto_inc=off --verbosity=5 --db-driver=comdb2 --threads=${nthreads} --histogram=on --time=30 run
+#echo "cleanup"
+##src/sysbench src/lua/oltp_insert.lua --db-debug=on --verbosity=3 --db-driver=comdb2 --threads=${nthreads} cleanup
+#echo "prepare"
+#src/sysbench src/lua/oltp_insert.lua --db-debug=on --auto_inc=off --verbosity=3 --db-driver=comdb2 --threads=${nthreads} prepare
+#echo "run"
+#src/sysbench src/lua/oltp_insert.lua --db-debug=on --auto_inc=off --verbosity=5 --db-driver=comdb2 --threads=${nthreads} --histogram=on --time=30 run
 
+echo "cleanup"
+src/sysbench src/lua/oltp_read_write.lua --db-debug=on --verbosity=3 --db-driver=comdb2 --threads=${nthreads} cleanup
+echo "prepare"
+src/sysbench src/lua/oltp_read_write.lua --db-debug=on --auto_inc=off --verbosity=3 --db-driver=comdb2 --threads=${nthreads} prepare
+echo "run"
+src/sysbench src/lua/oltp_read_write.lua --db-debug=on --auto_inc=off --verbosity=3 --db-driver=comdb2 --threads=${nthreads} --report-interval=1 --histogram=on --time=30 run
