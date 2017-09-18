@@ -304,6 +304,8 @@ void db_done(void);
 
 int db_print_value(db_bind_t *, char *, int);
 
+drv_caps_t db_capabilities(db_driver_t *drv);
+
 /* Initialize multi-row insert operation */
 int db_bulk_insert_init(db_conn_t *, const char *, size_t);
 

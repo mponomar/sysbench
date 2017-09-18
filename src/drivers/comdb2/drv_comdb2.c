@@ -21,8 +21,6 @@
 
 #include <cdb2api.h>
 
-#define DEBUG(format, ...) do { if (db_globals.debug) log_text(LOG_DEBUG, format, __VA_ARGS__); } while (0)
-
 static db_error_t comdb2_drv_query(struct db_conn *sb_conn, const char *query, size_t len, struct db_result *rs);
 
 static sb_arg_t comdb2_drv_args[] = {
@@ -43,21 +41,19 @@ static drv_caps_t comdb2_drv_caps =
 /* initialize driver */
 static int comdb2_drv_init(void)
 {
-  DEBUG("%s()", __func__);
   return 0;
 }
 
 /* thread-local driver initialization */
 static int comdb2_drv_thread_init(int thread_id)
 {
-  DEBUG("%s(thread_id=%d)", __func__, thread_id);
+  (void)thread_id;  
   return 0;
 }
 
 /* describe database capabilities */
 static int comdb2_drv_describe(drv_caps_t *caps)
 {
-  DEBUG("%s(caps=%p)", __func__, caps);
   *caps = comdb2_drv_caps;
   return 0;
 }
@@ -69,8 +65,7 @@ static int comdb2_drv_connect(struct db_conn *sb_conn)
   cdb2_hndl_tp *db;
   rc = cdb2_open(&db, "mikedb", "local", 0);
   sb_conn->ptr = db;
-  DEBUG("%s(sb_conn=%p) rc %d", __func__, sb_conn, rc);
-  return 0;
+  return rc == 0 ? 0 : DB_ERROR_FATAL;
 }
 
 /* reconnect with the same parameters */
@@ -82,8 +77,7 @@ static int comdb2_drv_reconnect(struct db_conn *sb_conn)
       cdb2_close(db);
   int rc = cdb2_open(&db, "mikedb", "local", 0);
   sb_conn->ptr = db;
-  DEBUG("%s(sb_conn=%p) rc %d", __func__, sb_conn, rc);
-  return 0;
+  return rc == 0 ?  0 : DB_ERROR_FATAL;
 }
 
 /* disconnect from database */
@@ -93,14 +87,13 @@ static int comdb2_drv_disconnect(struct db_conn *sb_conn)
   db = (cdb2_hndl_tp*) sb_conn->ptr;
   if (db)
       cdb2_close(db);
-  DEBUG("%s(sb_conn=%p)", __func__, sb_conn);
   return 0;
 }
 
 /* prepare statement */
 static int comdb2_drv_prepare(struct db_stmt *stmt, const char *query, size_t len)
 {
-  DEBUG("%s(stmt=%p, query=%.*s, len=%d)", __func__, stmt, (int) len, query, (int) len);
+  (void) len; 
   stmt->query = strdup(query);
   return 0;
 }
@@ -118,21 +111,37 @@ static int comdb2_drv_prepare(struct db_stmt *stmt, const char *query, size_t le
                   values[i].len = sizeof(var);                        \
               }
 
+struct comdb2_bound_values {
+    cdb2_coltype type;
+    int len;
+    union {
+        int64_t ival;
+        char *strval;
+        double rval;
+        // TODO: datetime/interval types
+    } value;
+    int isnull;
+    void *addr;
+};
+
+
+/* temporary kludge */
+__thread struct comdb2_bound_values *values;
+__thread int nvalues;
+
 /* bind params for prepared statements */
 static int comdb2_drv_bind_param(struct db_stmt *stmt, db_bind_t *params, size_t len)
 {
-  struct comdb2_bound_values{
-      cdb2_coltype type;
-      int len;
-      union {
-          int64_t ival;
-          char *strval;
-          double rval;
-          // TODO: datetime/interval types
-      } value;
-      int isnull;
-      void *addr;
-  } values[len];
+  if (values) {
+      for (int i = 0; i < nvalues; i++) {
+          if (values[i].addr && values[i].addr == CDB2_CSTRING) {
+              free(values[i].addr);
+          }
+      }
+      free(values);
+  }
+  values = calloc(len, sizeof(db_bind_t));
+  nvalues = len;
 
   cdb2_hndl_tp *db = (cdb2_hndl_tp*) stmt->connection->ptr;
   cdb2_clearbindings(db);
@@ -158,7 +167,7 @@ static int comdb2_drv_bind_param(struct db_stmt *stmt, db_bind_t *params, size_t
               DO_NUMERIC_PARAM(reg, CDB2_INTEGER, ival);
               break;
           case DB_TYPE_BIGINT:
-              DO_NUMERIC_PARAM(big, CDB2_INTEGER,ival);
+              DO_NUMERIC_PARAM(big, CDB2_INTEGER, ival);
               break;
           case DB_TYPE_FLOAT:
               DO_NUMERIC_PARAM(f, CDB2_REAL, rval);
@@ -176,6 +185,7 @@ static int comdb2_drv_bind_param(struct db_stmt *stmt, db_bind_t *params, size_t
                   memcpy(values[i].value.strval, params[i].buffer, *params[i].data_len);
                   values[i].addr = values[i].value.strval;
                   values[i].len = *params[i].data_len;
+                  values[i].type = CDB2_CSTRING;
               }
               break;
 
@@ -185,20 +195,17 @@ static int comdb2_drv_bind_param(struct db_stmt *stmt, db_bind_t *params, size_t
       }
 
       int rc = cdb2_bind_index(db, i+1, values[i].type, values[i].addr, values[i].len);
-      // printf("%d  type %d  addr %p len %d\n", (int) i, values[i].type, values[i].addr, values[i].len);
       if (rc) {
           log_text(LOG_FATAL, "bind arg %d rc %d %s\n", (int) i, rc, cdb2_errstr(db));
           return DB_ERROR_FATAL;
       }
   }
-  DEBUG("%s(stmt=%p, params=%p, le=%d)", __func__, stmt, params, (int) len);
   return 0;
 }
 
 /* bind results for prepared statement */
 static int comdb2_drv_bind_result(struct db_stmt *stmt, db_bind_t *params, size_t len)
 {
-  DEBUG("%s(stmt=%p, params=%p, len=%d)", __func__, stmt, params, (int) len);
   return 0;
 }
 
@@ -212,21 +219,18 @@ static db_error_t comdb2_drv_execute(struct db_stmt *stmt, struct db_result *rs)
       return DB_ERROR_FATAL;
   }
   db_error_t rc = comdb2_drv_query(stmt->connection, stmt->query, strlen(stmt->query), rs);
-  DEBUG("%s(stmt=%p, rs=%p) rc %d", __func__, stmt, rs, rc);
   return rc;
 }
 
 /* fetch row for prepared statement */
 static int comdb2_drv_fetch(struct db_result *rs)
 {
-  DEBUG("%s(rs=%p)", __func__, rs);
   return 0;
 }
 
 /* fetch row for queries */
 static int comdb2_drv_fetch_row(struct db_result *rs, struct db_row *row)
 {
-  DEBUG("%s(rs=%p, row=%p)", __func__, rs, row);
   return 0;
 }
 
@@ -242,11 +246,12 @@ static db_error_t comdb2_drv_query(struct db_conn *sb_conn, const char *query, s
   sb_conn->sql_state = NULL;
   sb_conn->sql_errmsg = NULL;
 
+  log_text(LOG_DEBUG, "%s(sb_conn=%p, query=%.*s, len=%d, rs=%p) rc=%d err=%s", __func__, sb_conn, (len > 100) ? 100 : (int) len, query, (int) len, rs, rc, cdb2_errstr(db));
   if (rc) {
       sb_conn->error = 0;
       sb_conn->sql_errno = rc;
       sb_conn->sql_errmsg = cdb2_errstr(db);
-      log_text(LOG_ALERT, "%s(sb_conn=%p, query=%.*s, len=%d, rs=%p) rc=%d err=%s", __func__, sb_conn, (int) len, query, (int) len, rs, rc, cdb2_errstr(db));
+      log_text(LOG_ALERT, "%s(sb_conn=%p, query=%.*s, len=%d, rs=%p) rc=%d err=%s", __func__, sb_conn, (len > 100) ? 100 : (int) len, query, (int) len, rs, rc, cdb2_errstr(db));
       if (rc == CDB2ERR_DUPLICATE)
           return 0;  // pretend this didn't happen
       else 
@@ -258,14 +263,12 @@ static db_error_t comdb2_drv_query(struct db_conn *sb_conn, const char *query, s
 /* free result set */
 static int comdb2_drv_free_results(struct db_result *rs)
 {
-  DEBUG("%s(rs=%p)", __func__, rs);
   return 0;
 }
 
 /* close prepared statement */
 static int comdb2_drv_close(struct db_stmt *stmt)
 {
-  DEBUG("%s(sb_conn=%p)", __func__, stmt);
   stmt->bound_param = NULL;
   return 0;
 }
@@ -273,14 +276,12 @@ static int comdb2_drv_close(struct db_stmt *stmt)
 /* thread-local driver deinitialization */
 static int comdb2_drv_thread_done(int thread_id)
 {
-  DEBUG("%s(thread_id=%d)", __func__, thread_id);
   return 0;
 }
 
 /* uninitialize driver */
 static int comdb2_drv_done(void)
 {
-  DEBUG("%s()", __func__);
   return 0;
 }
 

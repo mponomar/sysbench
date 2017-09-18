@@ -1097,3 +1097,9 @@ static void db_reset_stats(void)
     }
   }
 }
+
+drv_caps_t db_capabilities(db_driver_t *drv) {
+    drv_caps_t caps;
+    db_describe(drv, &caps);
+    return caps;
+} 

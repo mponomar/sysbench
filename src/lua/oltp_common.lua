@@ -76,11 +76,23 @@ sysbench.cmdline.options = {
           "delete_inserts is set to 0"}
 }
 
+-- opverride options that aren't supported by the driver
+function update_options(drv)
+   local caps = drv:capabilities()
+
+   if caps.auto_increment == 0 then
+      sysbench.cmdline.auto_inc = false
+      sysbench.opt.auto_inc = false
+   end
+end 
+
 -- Prepare the dataset. This command supports parallel execution, i.e. will
 -- benefit from executing with --threads > 1 as long as --tables > 1
 function cmd_prepare()
    local drv = sysbench.sql.driver()
    local con = drv:connect()
+
+   update_options(drv)
 
    for i = sysbench.tid % sysbench.opt.threads + 1, sysbench.opt.tables,
    sysbench.opt.threads do
@@ -96,6 +108,8 @@ end
 function cmd_warmup()
    local drv = sysbench.sql.driver()
    local con = drv:connect()
+
+   update_options(drv)
 
    assert(drv:name() == "mysql", "warmup is currently MySQL only")
 
@@ -154,7 +168,6 @@ function create_table(drv, con, table_num)
    local engine_def = ""
    local extra_table_options = ""
    local query
-
 
    if sysbench.opt.secondary then
      id_index_def = "KEY xid"
@@ -356,6 +369,8 @@ end
 function thread_init()
    drv = sysbench.sql.driver()
    con = drv:connect()
+
+   update_options(drv)
 
    -- Create global nested tables for prepared statements and their
    -- parameters. We need a statement and a parameter set for each combination

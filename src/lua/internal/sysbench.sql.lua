@@ -127,6 +127,16 @@ typedef struct
   char             *is_null;
 } sql_bind;
 
+typedef struct
+{
+    char     multi_rows_insert;
+    char     prepared_statements;
+    char     auto_increment;
+    char     needs_commit;
+    char     serial;
+    char     unsigned_int;
+} sql_caps;
+
 sql_driver *db_create(const char *);
 int db_destroy(sql_driver *drv);
 
@@ -142,6 +152,8 @@ void db_bulk_insert_done(sql_connection *);
 sql_result *db_query(sql_connection *con, const char *query, size_t len);
 
 sql_row *db_fetch_row(sql_result *rs);
+
+sql_caps db_capabilities(sql_driver * drv);
 
 sql_statement *db_prepare(sql_connection *con, const char *query, size_t len);
 int db_bind_param(sql_statement *stmt, sql_bind *params, size_t len);
@@ -159,6 +171,7 @@ local sql_bind = ffi.typeof('sql_bind');
 local sql_result = ffi.typeof('sql_result');
 local sql_value = ffi.typeof('sql_value');
 local sql_row = ffi.typeof('sql_row');
+local sql_caps = ffi.typeof('sql_caps');
 
 sysbench.sql.type =
 {
@@ -201,6 +214,11 @@ end
 
 function driver_methods.name(self)
    return ffi.string(self.sname)
+end
+
+function driver_methods.capabilities(self)
+    local caps = ffi.C.db_capabilities(self)
+    return caps
 end
 
 -- sql_driver metatable
